@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 """
 webApp class
@@ -13,6 +13,11 @@ webApp class
 import socket
 
 
+
+def decorateHTML (text):
+
+    return ("<html><body>" + text + "</body></html>")
+
 class webApp:
     """Root of a hierarchy of classes implementing web applications
 
@@ -26,13 +31,39 @@ class webApp:
 
         return None
 
-    def process(self, parsedRequest):
+    def process(self, verb, parsedRequest):
         """Process the relevant elements of the request.
 
         Returns the HTTP code for the reply, and an HTML page.
         """
 
-        return ("200 OK", "<html><body><h1>It works!</h1></body></html>")
+        """
+        Si el método es GET, diferenciar si es barra
+        """
+
+        if verb == 'GET':
+            print(parsedRequest)
+            if parsedRequest == '':
+                print('es get y barra')
+                respuesta = "<html><body><h1>Bienvenido a la Practica1 de Jon Lerida, bro</h1><br>\r\n"
+                respuesta = respuesta +("<form action=''>\r\n"+
+                                        "URL original:<br>\r\n"+
+                                        "<input type='text' name 'url'>"+
+                                        "<br>\r\n"+
+                                        "</form></body></html>")
+
+            else:
+                print('Es get y no barra')
+                respuesta = decorateHTML('No me has pedido barra, redirigiendo a la url pedida')
+
+            return ("200 OK", respuesta)
+        elif verb == 'POST':
+            print('Me ha llegado un POST')
+        else:
+            print('Me ha llegado algo que no es get')
+            respuesta = decorateHTML('Metodo invalido')
+            return ("404 Not Found", respuesta)
+
 
     def __init__(self, hostname, port):
         """Initialize the web application."""
@@ -47,19 +78,24 @@ class webApp:
 
         # Accept connections, read incoming data, and call
         # parse and process methods (in a loop)
-
-        while True:
-            print 'Waiting for connections'
-            (recvSocket, address) = mySocket.accept()
-            print 'HTTP request received (going to parse and process):'
-            request = recvSocket.recv(2048).decode('utf-8')
-            print request
-            parsedRequest = self.parse(request)
-            (returnCode, htmlAnswer) = self.process(parsedRequest)
-            print 'Answering back...'
-            recvSocket.send("HTTP/1.1 " + returnCode + " \r\n\r\n"
-                            + htmlAnswer + "\r\n")
-            recvSocket.close()
+        try:
+            while True:
+                print ('Waiting for connections')
+                (recvSocket, address) = mySocket.accept()
+                print ('HTTP request received (going to parse and process):')
+                request = recvSocket.recv(2048).decode('utf-8')
+                print (request)
+                [verb, recurso] = self.parse(request)
+                (returnCode, htmlAnswer) = self.process(verb, recurso)
+                print ('Answering back...')
+                recvSocket.send(bytes("HTTP/1.1 " + returnCode + " \r\n\r\n"
+                                + htmlAnswer + "\r\n", 'utf-8'))
+                recvSocket.close()
+        except KeyboardInterrupt:
+            mySocket.close()
+            print('\n\nClosing...')
 
 if __name__ == "__main__":
-    testWebApp = webApp("localhost", 1234)
+    NormalDicc = {} #Key --> URL; Value --> Index
+    InvertDicc = {} #Key --> index; Value--> URL
+    testWebApp = webApp("localhost", 8080)
