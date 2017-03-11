@@ -26,10 +26,13 @@ class webApp:
     will implement the logic of a web application in particular.
     """
 
+    Index = 0
     def parse(self, request):
         """Parse the received request, extracting the relevant information."""
-
-        return None
+        #Devuelve el recurso y el método utilizado
+        verb = request.split(' ',1)[0]
+        recurso = request.split()[1][1:]
+        return (verb, recurso, recurso)
 
     def process(self, verb, parsedRequest):
         """Process the relevant elements of the request.
@@ -41,28 +44,7 @@ class webApp:
         Si el método es GET, diferenciar si es barra
         """
 
-        if verb == 'GET':
-            print(parsedRequest)
-            if parsedRequest == '':
-                print('es get y barra')
-                respuesta = "<html><body><h1>Bienvenido a la Practica1 de Jon Lerida, bro</h1><br>\r\n"
-                respuesta = respuesta +("<form action=''>\r\n"+
-                                        "URL original:<br>\r\n"+
-                                        "<input type='text' name 'url'>"+
-                                        "<br>\r\n"+
-                                        "</form></body></html>")
-
-            else:
-                print('Es get y no barra')
-                respuesta = decorateHTML('No me has pedido barra, redirigiendo a la url pedida')
-
-            return ("200 OK", respuesta)
-        elif verb == 'POST':
-            print('Me ha llegado un POST')
-        else:
-            print('Me ha llegado algo que no es get')
-            respuesta = decorateHTML('Metodo invalido')
-            return ("404 Not Found", respuesta)
+        return ("200 Ok", '<html><body>Hi</body></html>')
 
 
     def __init__(self, hostname, port):
@@ -85,8 +67,8 @@ class webApp:
                 print ('HTTP request received (going to parse and process):')
                 request = recvSocket.recv(2048).decode('utf-8')
                 print (request)
-                [verb, recurso] = self.parse(request)
-                (returnCode, htmlAnswer) = self.process(verb, recurso)
+                peticion = self.parse(request)
+                [returnCode, htmlAnswer] = self.process(peticion)
                 print ('Answering back...')
                 recvSocket.send(bytes("HTTP/1.1 " + returnCode + " \r\n\r\n"
                                 + htmlAnswer + "\r\n", 'utf-8'))
