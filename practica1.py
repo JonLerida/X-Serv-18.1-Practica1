@@ -2,7 +2,6 @@
 
 
 import webapp
-""" Defino variables que usaré en el resto del programa. Como los diccionarios, indices, formulario..."""
 
 
 def decorateHTML (text):
@@ -42,7 +41,7 @@ def checkInvertDicc(recurso, diccionario):
 class Server(webapp.webApp):
 
 
-    normalDicc = {} #key--> URL, value--> short url
+    normalDicc = {'http:google.es': 1} #key--> URL, value--> short url
     invertDicc = {} #key--> short url, value--> URL
 
     prefix = 'https://' #añadir en las url's sin esto al principio
@@ -54,6 +53,19 @@ class Server(webapp.webApp):
                     "<meta http-equiv='Refresh' content='1;url=")
     redireccion2 = "'><body><h2>Redireccionandote...no te muevas!</h></body></html>"
 
+    #Ficheros
+    try:
+        fichID_1 = open('diccionarioDir', 'r+') #si no existe, se crea
+    except FileNotFoundError:
+        print('Fichero de inicio 1 no existe...creando')
+        fichID_1 = open('diccionarioDir', 'a+')
+    try:
+        fichID_2 = open('diccionarioIndir', 'r+') #si no existe, se crea
+    except FileNotFoundError:
+        print('Fichero de inicio 2 no existe...creando')
+        fichID_2 = open('diccionarioIndir', 'a+')
+    fichID_2.write("hola\n")
+
 
     index = 0
     #defino los métodos especiales. El __init__ no hace falta porque se hereda
@@ -62,9 +74,13 @@ class Server(webapp.webApp):
         Procesa una petición HTTP y devuelve el ḿetodo asocciado {GET, POST} y el
         Trocea la peticion
         """
-        verb = request.split(' ',1)[0] #metodo
-        recurso = request.split()[1][1:] #url pedida
-        cuerpo = request.split('\r\n\r\n', 1)[1] #si lo hay, será la url del formulario
+        try:
+            verb = request.split(' ',1)[0] #metodo
+            recurso = request.split()[1][1:] #url pedida
+            cuerpo = request.split('\r\n\r\n', 1)[1] #si lo hay, será la url del formulario
+        except IndexError:
+            print('error en parse')
+            return ('')
         #Devuelves los 3 parametros en forma de lista
         return (verb, recurso, cuerpo)
 
@@ -124,3 +140,5 @@ class Server(webapp.webApp):
 
 if __name__ == "__main__":
     MyServer = Server("localhost", 8080)
+    fichID_1.close()
+    fichID_2.close()
