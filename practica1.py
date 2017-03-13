@@ -1,7 +1,9 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*
 
 
 import webapp
+import csv
 
 
 def decorateHTML (text):
@@ -39,9 +41,9 @@ def checkInvertDicc(recurso, diccionario):
 
 
 class Server(webapp.webApp):
-
-
-    normalDicc = {'http:google.es': 1} #key--> URL, value--> short url
+    # ESTO SE EJECUTA AL PRINCIPIO
+    # Diccionarios de URLs
+    normalDicc = {} #key--> URL, value--> short url
     invertDicc = {} #key--> short url, value--> URL
 
     prefix = 'https://' #añadir en las url's sin esto al principio
@@ -53,22 +55,24 @@ class Server(webapp.webApp):
                     "<meta http-equiv='Refresh' content='1;url=")
     redireccion2 = "'><body><h2>Redireccionandote...no te muevas!</h></body></html>"
 
-    #Ficheros
-    try:
-        fichID_1 = open('diccionarioDir', 'r+') #si no existe, se crea
-    except FileNotFoundError:
-        print('Fichero de inicio 1 no existe...creando')
-        fichID_1 = open('diccionarioDir', 'a+')
-    try:
-        fichID_2 = open('diccionarioIndir', 'r+') #si no existe, se crea
-    except FileNotFoundError:
-        print('Fichero de inicio 2 no existe...creando')
-        fichID_2 = open('diccionarioIndir', 'a+')
-    fichID_2.write("hola\n")
+    index = 0 #Primera URL acortada, empieza en 0
+
+    # Abrimos el fichero en csv para recoger las posibles direcciones guardadas y las metemos en los diccionarios
+    # line es una lista con todos los elementos de una línea. Me quedo con el primer elemento (la url)
+    # Usar with permite no tener que andar cerrando los ficheros
+    with open('diccionarioDir.csv', 'r+') as dicc_directo:
+        reader = csv.reader(dicc_directo)
+        print("Recuperando diccionarios de URL's validas...")
+        for line in reader:
+            normalDicc[line[0]] = index
+            invertDicc[index] = line[0]
+            index = index+1
 
 
-    index = 0
-    #defino los métodos especiales. El __init__ no hace falta porque se hereda
+
+
+
+    #defino los métodos especiales. Deben tener los mismo argumentos que los de la clase que hereda (webapp)
     def parse(self, request):
         """
         Procesa una petición HTTP y devuelve el ḿetodo asocciado {GET, POST} y el
@@ -79,7 +83,6 @@ class Server(webapp.webApp):
             recurso = request.split()[1][1:] #url pedida
             cuerpo = request.split('\r\n\r\n', 1)[1] #si lo hay, será la url del formulario
         except IndexError:
-            print('error en parse')
             return ('')
         #Devuelves los 3 parametros en forma de lista
         return (verb, recurso, cuerpo)
@@ -110,13 +113,14 @@ class Server(webapp.webApp):
                         codigo = '400 Bad Request'
                         respuesta = decorateHTML(codigo)+ "<p> Recurso no alojado en el servidor</p>"
         elif verb=='POST':
-            if cuerpo == '':
+            if cuerpo == 'URL=':
                 print('No me han mandado URL')
-                respuesta = decorateHTML('No hay URL!')
+                respuesta = decorateHTML('La caja esta para escribir')
                 codigo = '200 Ok'
             else:
                 URL = makeURL(cuerpo, self.prefix)
-                print(URL)
+                print('--------------')
+                print('URL procesada...')
                 respuesta = decorateHTML('Traduccion realizada con exito.')+"<p>Tus resultados:</p>"
                 codigo = '200 Ok'
                 [shortURL, IsNew] = checkDicc(URL, self.index, self.normalDicc)
@@ -124,8 +128,15 @@ class Server(webapp.webApp):
                     #lo meto en los diccionarios
                     self.normalDicc[URL]= shortURL
                     self.invertDicc[shortURL]= URL
+
+                    #actualizo el fichero CSV para futuras peticiones
+                    with open('diccionarioDir.csv', 'a') as dicc1:
+                            writer1 = csv.writer(dicc1)
+                            writer1.writerow([URL])
+                    #Actualizamos el Index
                     self.index = self.index+1;
-                #Genero la respuesta
+
+                #Genero la respuesta (busco en el diccionario la URL corta)
                 urlcorta = self.normalDicc[URL]
                 respuesa = decorateHTML('URL acortada con exito')
                 respuesta = (respuesta+ "<p>URL corta: </p><a href='"+str(urlcorta)+"'>"+ str(urlcorta)+
@@ -140,5 +151,3 @@ class Server(webapp.webApp):
 
 if __name__ == "__main__":
     MyServer = Server("localhost", 8080)
-    fichID_1.close()
-    fichID_2.close()
